@@ -1,0 +1,21 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Pruebas de la cátedra
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v3
+
+      - name: Instalar paquetes
+        run: |
+          sudo apt update
+          sudo apt -y install clang-14 build-essential valgrind
+
+      - name: Ejecutar pruebas
+        run: bash .algo2/test.sh
