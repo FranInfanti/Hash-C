@@ -6,7 +6,7 @@
 
 typedef struct nodo {
 	void *valor;
-	const char *clave;
+	char *clave;
 	struct nodo *siguiente;
 } nodo_t;
 
@@ -37,58 +37,60 @@ nodo_t *crear_nodo(const char *clave, void *elemento)
 	nodo_t *nuevo = calloc(1, sizeof(struct nodo));
 	if (nuevo == NULL)
 		return NULL;
-	nuevo->clave = clave;
+
+	nuevo->clave = calloc(1, (strlen(clave) + 1) * sizeof(char));
+	if (nuevo->clave == NULL)
+		return NULL;
+
+	memcpy(nuevo->clave, clave, (strlen(clave) + 1));
 	nuevo->valor = elemento;
 	return nuevo;
 }
 
 /*
- * Recorre las colisiones hasta llegar al final o encontrar una con la 
- * misma clave que la pasada por parametro.
+ * Busca el nodo cuya clave coincida con la pasada por parametro.
  * 
- * Devuelve el ultimo nodo de las colisiones o el que coincida con la clave.
+ * Devuelve el valor que almecena el nodo que cumpla la condicion o NULL si no lo encuentra.
  */
-nodo_t *recorrer_colision(nodo_t *actual, const char *clave)
+void *buscar_clave(nodo_t *actual, const char *clave)
 {
 	if (actual == NULL)
 		return NULL;
-	if (actual->siguiente == NULL || strcmp(actual->clave, clave) == 0)
+	if (strcmp(actual->clave, clave) == 0)
 		return actual;
-
-	return recorrer_colision(actual->siguiente, clave);
+	return buscar_clave(actual->siguiente, clave);
 }
 
 /*
- * Inserta el nuevo nodo en la tabla de hash, o actualiza el valor
- * del nodo cuya clave sea igual que la del nodo nuevo.
+ * Recibe el hash, la posicion donde se debe insertar y un nuevo nodo que contiene 
+ * la informacion del elemento a insertar.
  * 
- * Devuelve el valor anterior que tenia el nodo, si es que se intercambio, sino
- * devuelve NULL.
+ * Inserta el nuevo nodo en la tabla o intercambia el valor si la clave coincide con 
+ * alguna del arbol.
+ * 
+ * Devuelve un puntero al elemento que se intercambio, si es que lo hizo, caso contrario 
+ * se devuelve NULL.
  */
-void *insertar_nodo(struct hash *hash, size_t posicion, nodo_t *nuevo)
+void *insertar_nodo(struct hash *hash, size_t posicion, nodo_t **nuevo)
 {
-	bool repetido = false;
-
-	nodo_t *ultimo = recorrer_colision(hash->array[posicion], nuevo->clave);
-	void *removido = NULL;
-
-	if (ultimo == NULL)
-		hash->array[posicion] = nuevo;
-
-	else if (strcmp(ultimo->clave, nuevo->clave) != 0)
-		ultimo->siguiente = nuevo;
-
+	void *swap = NULL;
+	if (hash->array[posicion] == NULL)
+		hash->array[posicion] = *nuevo;
 	else {
-		removido = ultimo->valor;
-		ultimo->valor = nuevo->valor;
-		repetido = true;
-		free(nuevo);
+		nodo_t *existe =
+			buscar_clave(hash->array[posicion], (*nuevo)->clave);
+		if (existe == NULL) {
+			(*nuevo)->siguiente = hash->array[posicion];
+			hash->array[posicion] = *nuevo;
+		} else {
+			swap = existe->valor;
+			existe->valor = (*nuevo)->valor;
+			free((*nuevo)->clave);
+			free(*nuevo);
+			*nuevo = NULL;
+		}
 	}
-
-	if (!repetido)
-		hash->capacidad++;
-
-	return removido;
+	return swap;
 }
 
 /*
@@ -104,20 +106,6 @@ nodo_t *buscar_eliminado(nodo_t *actual, const char *clave)
 }
 
 /*
- * Busca el nodo cuya clave coincida con la pasada por parametro.
- * 
- * Devuelve el valor que almecena el nodo que cumpla la condicion o NULL si no lo encuentra.
- */
-void *buscar_clave(nodo_t *actual, const char *clave)
-{
-	if (actual == NULL)
-		return NULL;
-	if (strcmp(actual->clave, clave) == 0)
-		return actual->valor;
-	return buscar_clave(actual->siguiente, clave);
-}
-
-/*
  * Recorre las colisiones de una posicion de la tabla y libera 
  * la memoria de cada nodo.
  */
@@ -125,11 +113,11 @@ void liberar_nodos(nodo_t *actual, void (*destructor)(void *))
 {
 	if (actual == NULL)
 		return;
-
 	if (destructor != NULL)
 		destructor(actual->valor);
 
 	void *aux = actual->siguiente;
+	free(actual->clave);
 	free(actual);
 	liberar_nodos(aux, destructor);
 }
@@ -152,7 +140,6 @@ size_t recorrer_nodos(nodo_t *actual,
 	}
 	return 1 + recorrer_nodos(actual->siguiente, f, aux, sigo);
 }
-
 
 hash_t *hash_crear(size_t capacidad)
 {
@@ -178,17 +165,16 @@ hash_t *hash_insertar(hash_t *hash, const char *clave, void *elemento,
 		return NULL;
 
 	size_t posicion = djb2((unsigned char *)clave) % hash->tamanio;
-
 	nodo_t *nuevo = crear_nodo(clave, elemento);
 	if (nuevo == NULL)
 		return NULL;
 
-	void *removido = insertar_nodo(hash, posicion, nuevo);
+	void *swap = insertar_nodo(hash, posicion, &nuevo);
 
 	if (anterior != NULL)
-		*anterior = removido;
-
-	/* Falta rehash */
+		*anterior = swap;
+	if (nuevo != NULL)
+		hash->capacidad++;
 
 	return hash;
 }
@@ -206,7 +192,6 @@ void *hash_quitar(hash_t *hash, const char *clave)
 	nodo_t *eliminado = NULL;
 	nodo_t *anterior = NULL;
 
-
 	if (strcmp(hash->array[posicion]->clave, clave) == 0) {
 		eliminado = hash->array[posicion];
 		hash->array[posicion] = eliminado->siguiente;
@@ -219,6 +204,7 @@ void *hash_quitar(hash_t *hash, const char *clave)
 	}
 
 	valor = eliminado->valor;
+	free(eliminado->clave);
 	free(eliminado);
 	hash->capacidad--;
 
@@ -231,7 +217,9 @@ void *hash_obtener(hash_t *hash, const char *clave)
 		return NULL;
 
 	size_t posicion = djb2((unsigned char *)clave) % hash->tamanio;
-	return buscar_clave(hash->array[posicion], clave);
+	nodo_t *buscado = buscar_clave(hash->array[posicion], clave);
+
+	return buscado == NULL ? NULL : buscado->valor;
 }
 
 bool hash_contiene(hash_t *hash, const char *clave)
