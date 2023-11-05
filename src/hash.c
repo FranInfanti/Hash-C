@@ -17,20 +17,9 @@ struct hash {
 	struct nodo **array;
 };
 
-unsigned long int FNV_hash(void* dataToHash, unsigned long int length)
+unsigned long djb2(void *data)
 {
-	unsigned char* p = (unsigned char *) dataToHash;
-  	unsigned long int h = 2166136261UL;
-  	unsigned long int i;
-
-  	for(i = 0; i < length; i++)
-    		h = (h * 16777619) ^ p[i] ;
-
-  	return h;
-}
-
-unsigned long djb2(const unsigned char *str)
-{
+	const unsigned char *str = data;
 	unsigned long hash = 5381;
 	int c;
 
@@ -49,12 +38,12 @@ unsigned long djb2(const unsigned char *str)
 nodo_t *crear_nodo(const char *clave, void *elemento)
 {
 	nodo_t *nuevo = calloc(1, sizeof(struct nodo));
-	if (nuevo == NULL)
+	if (!nuevo)
 		return NULL;
 
 	size_t tamanio = strlen(clave) + 1;
 	nuevo->clave = calloc(1, tamanio * sizeof(char));
-	if (nuevo->clave == NULL) {
+	if (!nuevo->clave) {
 		free(nuevo);
 		return NULL;
 	}
@@ -156,7 +145,7 @@ void liberar_nodos(nodo_t *actual, void (*destructor)(void *))
 		void *aux = actual->siguiente;
 		free(actual->clave);
 		free(actual);
-		actual = aux;		
+		actual = aux;
 	}
 }
 
@@ -170,13 +159,45 @@ size_t recorrer_nodos(nodo_t *actual,
 		      bool (*f)(const char *clave, void *valor, void *aux),
 		      void *aux, bool *sigo)
 {
-	if (actual == NULL)
-		return 0;
-	if (!f(actual->clave, actual->valor, aux)) {
-		*sigo = false;
-		return 1;
+	size_t i = 0;
+	while (actual != NULL && *sigo) {
+		*sigo = f(actual->clave, actual->valor, aux);
+		i++;
+		actual = actual->siguiente;
 	}
-	return 1 + recorrer_nodos(actual->siguiente, f, aux, sigo);
+	return i;
+}
+
+/*
+ * Recibe el hash a rehashear. 
+ *
+ * Devuelve el hash rehasheado o NULL en caso de error.
+ */
+void *rehash(struct hash *hash)
+{
+	struct nodo **array = hash->array;
+	size_t nuevo_tamanio = hash->tamanio << 1;
+
+	hash->array = calloc(1, (nuevo_tamanio) * sizeof(struct nodo *));
+	if (!hash->array) {
+		hash->array = array;
+		return NULL;
+	}
+	hash->tamanio = nuevo_tamanio;
+	hash->capacidad = 0;
+
+	for (size_t i = 0; i < nuevo_tamanio >> 1; i++) {
+		struct nodo *actual = array[i];
+		while (actual != NULL) {
+			size_t posicion = (size_t)djb2((void *)actual->clave) %
+					  hash->tamanio;
+			void *aux = actual->siguiente;
+			insertar_nodo(hash, posicion, actual);
+			actual = aux;
+		}
+	}
+	free(array);
+	return hash;
 }
 
 hash_t *hash_crear(size_t capacidad)
@@ -186,7 +207,6 @@ hash_t *hash_crear(size_t capacidad)
 		return NULL;
 
 	hash->tamanio = capacidad < CANT_MINIMA ? CANT_MINIMA : capacidad;
-
 	hash->array = calloc(1, hash->tamanio * sizeof(struct nodo *));
 	if (!hash->array) {
 		free(hash);
@@ -201,8 +221,7 @@ hash_t *hash_insertar(hash_t *hash, const char *clave, void *elemento,
 	if (!hash || !clave)
 		return NULL;
 
-	size_t posicion = (size_t)djb2((unsigned char *)clave) % hash->tamanio;
-//	size_t posicion = (size_t)FNV_hash((void*)clave, (unsigned long)(strlen(clave))) % hash->tamanio;
+	size_t posicion = (size_t)djb2((void *)clave) % hash->tamanio;
 	void *remplazado = NULL;
 
 	nodo_t *existe = buscar_clave(hash->array[posicion], clave);
@@ -215,7 +234,10 @@ hash_t *hash_insertar(hash_t *hash, const char *clave, void *elemento,
 	}
 	if (!!anterior)
 		*anterior = remplazado;
-	return hash;
+
+	float factor_carga = (float)hash->capacidad / (float)hash->tamanio;
+
+	return factor_carga >= FACTOR_CARGA_MAXIMO ? rehash(hash) : hash;
 }
 
 void *hash_quitar(hash_t *hash, const char *clave)
@@ -223,9 +245,8 @@ void *hash_quitar(hash_t *hash, const char *clave)
 	if (!hash || !clave)
 		return NULL;
 
-	size_t posicion = (size_t)djb2((unsigned char *)clave) % hash->tamanio;
-//	size_t posicion = (size_t)FNV_hash((void*)clave, (unsigned long)(strlen(clave))) % hash->tamanio;
-	if (hash->array[posicion] == NULL)
+	size_t posicion = (size_t)djb2((void *)clave) % hash->tamanio;
+	if (!hash->array[posicion])
 		return NULL;
 
 	return quitar_nodo(hash, posicion, clave);
@@ -233,24 +254,26 @@ void *hash_quitar(hash_t *hash, const char *clave)
 
 void *hash_obtener(hash_t *hash, const char *clave)
 {
-	if (hash == NULL || clave == NULL)
+	if (!hash || !clave)
 		return NULL;
 
-	size_t posicion = (size_t)djb2((unsigned char *)clave) % hash->tamanio;
-//	size_t posicion = (size_t)FNV_hash((void*)clave, (unsigned long)(strlen(clave))) % hash->tamanio;
+	size_t posicion = (size_t)djb2((void *)clave) % hash->tamanio;
 	nodo_t *buscado = buscar_clave(hash->array[posicion], clave);
 
-	return buscado == NULL ? NULL : buscado->valor;
+	return !buscado ? NULL : buscado->valor;
 }
 
 bool hash_contiene(hash_t *hash, const char *clave)
 {
-	return !!hash_obtener(hash, clave);
+	if (!hash || !clave)
+		return NULL;
+	size_t posicion = (size_t)djb2((void *)clave) % hash->tamanio;
+	return !!buscar_clave(hash->array[posicion], clave);
 }
 
 size_t hash_cantidad(hash_t *hash)
 {
-	return hash == NULL ? 0 : hash->capacidad;
+	return !hash ? 0 : hash->capacidad;
 }
 
 void hash_destruir(hash_t *hash)
@@ -260,13 +283,11 @@ void hash_destruir(hash_t *hash)
 
 void hash_destruir_todo(hash_t *hash, void (*destructor)(void *))
 {
-	if (hash == NULL)
+	if (!hash)
 		return;
 
-	if (hash->capacidad != 0) {
-		for (size_t i = 0; i < hash->tamanio; i++)
-			liberar_nodos(hash->array[i], destructor);
-	}
+	for (size_t i = 0; i < hash->tamanio; i++)
+		liberar_nodos(hash->array[i], destructor);
 	free(hash->array);
 	free(hash);
 }
