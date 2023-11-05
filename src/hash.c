@@ -17,13 +17,25 @@ struct hash {
 	struct nodo **array;
 };
 
-size_t djb2(const unsigned char *str)
+unsigned long int FNV_hash(void* dataToHash, unsigned long int length)
 {
-	size_t hash = 5381;
-	size_t c;
+	unsigned char* p = (unsigned char *) dataToHash;
+  	unsigned long int h = 2166136261UL;
+  	unsigned long int i;
+
+  	for(i = 0; i < length; i++)
+    		h = (h * 16777619) ^ p[i] ;
+
+  	return h;
+}
+
+unsigned long djb2(const unsigned char *str)
+{
+	unsigned long hash = 5381;
+	int c;
 
 	while ((c = *(str++)))
-		hash = ((hash << 5) + hash) + c;
+		hash = ((hash << 5) + hash) + (unsigned long)c;
 
 	return hash;
 }
@@ -79,11 +91,13 @@ bool insertar_nodo(struct hash *hash, size_t posicion, nodo_t *nuevo)
  */
 nodo_t *buscar_clave(nodo_t *actual, const char *clave)
 {
-	if (actual == NULL)
-		return NULL;
-	if (strcmp(actual->clave, clave) == 0)
-		return actual;
-	return buscar_clave(actual->siguiente, clave);
+	nodo_t *buscado = NULL;
+	while (buscado == NULL && actual != NULL) {
+		if (strcmp(actual->clave, clave) == 0)
+			buscado = actual;
+		actual = actual->siguiente;
+	}
+	return buscado;
 }
 
 /*
@@ -94,11 +108,13 @@ nodo_t *buscar_clave(nodo_t *actual, const char *clave)
  */
 nodo_t *anterior_a_eliminar(nodo_t *actual, const char *clave)
 {
-	if (actual->siguiente == NULL)
-		return NULL;
-	if (strcmp(actual->siguiente->clave, clave) == 0)
-		return actual;
-	return anterior_a_eliminar(actual->siguiente, clave);
+	nodo_t *anterior = NULL;
+	while (anterior == NULL && actual->siguiente != NULL) {
+		if (strcmp(actual->siguiente->clave, clave) == 0)
+			anterior = actual;
+		actual = actual->siguiente;
+	}
+	return anterior;
 }
 
 /*
@@ -136,15 +152,12 @@ void *quitar_nodo(struct hash *hash, size_t posicion, const char *clave)
  */
 void liberar_nodos(nodo_t *actual, void (*destructor)(void *))
 {
-	if (actual == NULL)
-		return;
-	if (destructor != NULL)
-		destructor(actual->valor);
-
-	void *aux = actual->siguiente;
-	free(actual->clave);
-	free(actual);
-	liberar_nodos(aux, destructor);
+	while (actual != NULL) {
+		void *aux = actual->siguiente;
+		free(actual->clave);
+		free(actual);
+		actual = aux;		
+	}
 }
 
 /* 
@@ -188,7 +201,8 @@ hash_t *hash_insertar(hash_t *hash, const char *clave, void *elemento,
 	if (!hash || !clave)
 		return NULL;
 
-	size_t posicion = djb2((unsigned char *)clave) % hash->tamanio;
+	size_t posicion = (size_t)djb2((unsigned char *)clave) % hash->tamanio;
+//	size_t posicion = (size_t)FNV_hash((void*)clave, (unsigned long)(strlen(clave))) % hash->tamanio;
 	void *remplazado = NULL;
 
 	nodo_t *existe = buscar_clave(hash->array[posicion], clave);
@@ -209,7 +223,8 @@ void *hash_quitar(hash_t *hash, const char *clave)
 	if (!hash || !clave)
 		return NULL;
 
-	size_t posicion = djb2((unsigned char *)clave) % hash->tamanio;
+	size_t posicion = (size_t)djb2((unsigned char *)clave) % hash->tamanio;
+//	size_t posicion = (size_t)FNV_hash((void*)clave, (unsigned long)(strlen(clave))) % hash->tamanio;
 	if (hash->array[posicion] == NULL)
 		return NULL;
 
@@ -221,7 +236,8 @@ void *hash_obtener(hash_t *hash, const char *clave)
 	if (hash == NULL || clave == NULL)
 		return NULL;
 
-	size_t posicion = djb2((unsigned char *)clave) % hash->tamanio;
+	size_t posicion = (size_t)djb2((unsigned char *)clave) % hash->tamanio;
+//	size_t posicion = (size_t)FNV_hash((void*)clave, (unsigned long)(strlen(clave))) % hash->tamanio;
 	nodo_t *buscado = buscar_clave(hash->array[posicion], clave);
 
 	return buscado == NULL ? NULL : buscado->valor;
