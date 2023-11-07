@@ -2,17 +2,24 @@
 #include "src/hash.h"
 #include <string.h>
 
-bool sin_corte(const char *clave, void *valor, void *aux)
+void no_se_puede_insertar_en_un_hash_nulo()
 {
-	return strcmp(clave, "Leclerc") != 0;
+	char *clave = "0x7eb17cbd";
+	char *msj = "Ferriari";
+	pa2m_afirmar(hash_insertar(NULL, clave, msj, NULL) == NULL,
+		     "No se puede insertar un par en un hash nulo");
 }
 
-bool corte(const char *clave, void *valor, void *aux)
+void no_se_puede_insertar_con_una_clave_nula()
 {
-	return strcmp(clave, "Bianca") != 0;
+	hash_t *hash = hash_crear(3);
+	char *msj = "Toyota";
+	pa2m_afirmar(hash_insertar(hash, NULL, msj, NULL) == NULL,
+		     "No se puede insertar un par con clave nula");
+	hash_destruir(hash);
 }
 
-void se_pueden_insertar_varios_elementos()
+void se_puede_insertar_elementos_en_un_hash_sin_remplazos()
 {
 	hash_t *hash = hash_crear(20);
 
@@ -23,7 +30,7 @@ void se_pueden_insertar_varios_elementos()
 	int tamanio = 7;
 
 	for (int i = 0; i < tamanio; i++)
-		hash = hash_insertar(hash, nombres[i], &equipos[i], NULL);
+		hash = hash_insertar(hash, nombres[i], equipos[i], NULL);
 
 	bool exito = true;
 	for (int i = 0; i < tamanio && exito; i++)
@@ -36,7 +43,7 @@ void se_pueden_insertar_varios_elementos()
 	hash_destruir(hash);
 }
 
-void se_puede_actualizar_el_valor_de_los_elementos()
+void se_puede_insertar_elementos_en_un_hash_con_remplazo()
 {
 	hash_t *hash = hash_crear(20);
 
@@ -47,17 +54,17 @@ void se_puede_actualizar_el_valor_de_los_elementos()
 	int tamanio = 7;
 
 	for (int i = 0; i < tamanio; i++)
-		hash = hash_insertar(hash, nombres[i], &equipos[i], NULL);
+		hash = hash_insertar(hash, nombres[i], equipos[i], NULL);
 
 	char *nombre = "Bianca";
 	char *equipo = "Jota";
 	void *remplazado = equipo;
 
-	hash = hash_insertar(hash, nombre, &equipo, (void *)&remplazado);
+	hash = hash_insertar(hash, nombre, equipo, (void *)&remplazado);
 
-	pa2m_afirmar(hash_obtener(hash, nombre) == &equipo,
+	pa2m_afirmar(hash_obtener(hash, nombre) == equipo,
 		     "Se actualizo el valor correctamente");
-	pa2m_afirmar(remplazado == &equipos[2],
+	pa2m_afirmar(remplazado == equipos[2],
 		     "Se guardo correctamente el valor previo");
 	pa2m_afirmar(hash_cantidad(hash) == tamanio,
 		     "El tamaño es el correcto");
@@ -65,35 +72,31 @@ void se_puede_actualizar_el_valor_de_los_elementos()
 	hash_destruir(hash);
 }
 
-void se_puede_hacer_un_rehash_correcto()
+void se_puede_insertar_elementos_nulos()
 {
-	hash_t *hash = hash_crear(3);
+	hash_t *hash = hash_crear(4);
 
-	char *nombres[] = { "Fran",  "Otto", "Bianca", "Oli",
-			    "Mateo", "Tomi", "Rocco",  "Alan" };
-	char *equipos[] = { "Ferrari",	"Toyota",  "Glickenhaus", "Porsche",
-			    "Cadillac", "Vanwall", "Peugeot",	  "United" };
-	int tamanio = 8;
+	char *clave[] = { "0x00000000", "0x77073096", "0xee0e612c",
+			  "0x990951ba" };
+	size_t tamanio = 4;
 
-	for (int i = 0; i < tamanio; i++)
-		hash = hash_insertar(hash, nombres[i], equipos[i], NULL);
+	for (size_t i = 0; i < tamanio; i++)
+		hash = hash_insertar(hash, clave[i], NULL, NULL);
 
-	bool exito = true;
-	for (int i = 0; i < tamanio && exito; i++)
-		exito = !!hash_obtener(hash, nombres[i]);
+	bool sigo = true;
+	for (size_t i = 0; i < tamanio && sigo; i++)
+		sigo = hash_contiene(hash, clave[i]);
 
-	pa2m_afirmar(exito, "No se perdieron elementos en el rehash");
+	pa2m_afirmar(sigo, "Se puede almacenar valores NULL");
 	pa2m_afirmar(hash_cantidad(hash) == tamanio,
 		     "La cantidad de elementos es correcta");
-
 	hash_destruir(hash);
 }
 
-void inserscion_masiva()
+void se_prueba_que_el_rehash_funcione_correctamente()
 {
 	hash_t *hash = hash_crear(3);
 
-	/* No abrir */
 	char *clave[] = {
 		"0x00000000",  "0x77073096",  "0xee0e612c",  "0x990951ba",
 		"0x076dc419",  "0x2d02ef8d",  "0xe963a535",  "0x9e6495a3",
@@ -361,13 +364,33 @@ void inserscion_masiva()
 	for (size_t i = 0; i < tamanio && sigo; i++)
 		sigo = hash_contiene(hash, clave[i]);
 
-	pa2m_afirmar(sigo, "Se almacenaron 813 elementos correctamente");
+	pa2m_afirmar(
+		sigo,
+		"Se almacenaron 813 elementos correctamente causando un rehash");
 	pa2m_afirmar(hash_cantidad(hash) == tamanio,
 		     "La cantidad de elementos es correcta");
 	hash_destruir(hash);
 }
 
-void se_puede_eliminar_una_clave_que_existe()
+void no_se_puede_quitar_un_elemento_de_un_hash_nulo()
+{
+	char *clave = "0xf4d4b551";
+	pa2m_afirmar(hash_quitar(NULL, clave) == NULL,
+		     "No se puede quitar un elemento de un hash nulo");
+}
+
+void no_se_puede_quitar_un_elemento_con_clave_nula()
+{
+	hash_t *hash = hash_crear(4);
+	char *clave = "0xf4d4b551";
+	char *msj = "...........";
+	hash = hash_insertar(hash, clave, msj, NULL);
+	pa2m_afirmar(hash_quitar(hash, NULL) == NULL,
+		     "No se puede quitar un elemento con una clave nula");
+	hash_destruir(hash);
+}
+
+void se_puede_quitar_un_elemento_que_existe()
 {
 	hash_t *hash = hash_crear(10);
 
@@ -377,10 +400,10 @@ void se_puede_eliminar_una_clave_que_existe()
 	int tamanio = 6;
 
 	for (int i = 0; i < tamanio; i++)
-		hash = hash_insertar(hash, nombres[i], &equipos[i], NULL);
+		hash = hash_insertar(hash, nombres[i], equipos[i], NULL);
 
 	void *eliminado = hash_quitar(hash, "Oli");
-	pa2m_afirmar(eliminado == &equipos[3],
+	pa2m_afirmar(eliminado == equipos[3],
 		     "Se elimino correctamente el valor esperado");
 	pa2m_afirmar(hash_cantidad(hash) == tamanio - 1,
 		     "La cantidad de elementos es correcta");
@@ -388,7 +411,7 @@ void se_puede_eliminar_una_clave_que_existe()
 	hash_destruir_todo(hash, NULL);
 }
 
-void no_se_puede_eliminar_una_clave_que_no_existe()
+void no_se_puede_quitar_un_elemento_que_no_existe()
 {
 	hash_t *hash = hash_crear(10);
 
@@ -398,15 +421,42 @@ void no_se_puede_eliminar_una_clave_que_no_existe()
 	int tamanio = 5;
 
 	for (int i = 0; i < tamanio; i++)
-		hash = hash_insertar(hash, nombres[i], &equipos[i], NULL);
+		hash = hash_insertar(hash, nombres[i], equipos[i], NULL);
 
 	void *eliminado = hash_quitar(hash, "Oli");
-	pa2m_afirmar(eliminado == NULL,
-		     "No se puede eliminar una clave que no existe");
+	pa2m_afirmar(
+		eliminado == NULL,
+		"No se puede eliminar un elemento con una clave que no existe");
 	pa2m_afirmar(hash_cantidad(hash) == tamanio,
 		     "La cantidad de elementos no deberia cambiar");
 
 	hash_destruir_todo(hash, NULL);
+}
+
+void no_se_puede_quitar_sobre_un_hash_vacio()
+{
+	hash_t *hash = hash_crear(3);
+	char *clave = "0xf4d4b551";
+	pa2m_afirmar(hash_quitar(hash, clave) == NULL,
+		     "No se puede quitar un elemento de un hash vacio");
+	hash_destruir(hash);
+}
+
+void no_se_puede_buscar_en_un_hash_nulo()
+{
+	char *clave = "0xf4d4b551";
+	pa2m_afirmar(hash_obtener(NULL, clave) == NULL &&
+			     !hash_obtener(NULL, clave),
+		     "No se puede buscar en un hash nulo");
+}
+
+void no_se_puede_buscar_con_una_clave_nula()
+{
+	hash_t *hash = hash_crear(3);
+	pa2m_afirmar(hash_obtener(hash, NULL) == NULL &&
+			     !hash_obtener(hash, NULL),
+		     "No se puede buscar en un hash nulo");
+	hash_destruir(hash);
 }
 
 void se_puede_buscar_un_elemento_que_existe()
@@ -423,13 +473,14 @@ void se_puede_buscar_un_elemento_que_existe()
 		hash = hash_insertar(hash, nombres[i], equipos[i], NULL);
 
 	char *buscado = hash_obtener(hash, "Fran");
-	pa2m_afirmar(strcmp(buscado, "Ferrari") == 0,
+	pa2m_afirmar(strcmp(buscado, "Ferrari") == 0 &&
+			     hash_contiene(hash, "Fran"),
 		     "Busco un elemento que existe y lo encuentro");
 
 	hash_destruir(hash);
 }
 
-void no_se_puede_encontrara_un_elemento_que_no_existe()
+void no_se_puede_encontrar_un_elemento_que_no_existe()
 {
 	hash_t *hash = hash_crear(20);
 
@@ -443,68 +494,47 @@ void no_se_puede_encontrara_un_elemento_que_no_existe()
 		hash = hash_insertar(hash, nombres[i], equipos[i], NULL);
 
 	char *buscado = hash_obtener(hash, "Leclerc");
-	pa2m_afirmar(buscado == NULL,
+	pa2m_afirmar(buscado == NULL && !hash_contiene(hash, "Leclerc"),
 		     "Buscar un elemento que no existe devuelve NULL");
 
 	hash_destruir(hash);
 }
 
-void un_elemento_eliminado_no_sigue_en_el_hash()
+void no_se_busca_sobre_un_hash_vacio()
 {
-	hash_t *hash = hash_crear(10);
+	hash_t *hash = hash_crear(20);
+	pa2m_afirmar(hash_obtener(hash, "Fran") == NULL &&
+			     !hash_contiene(hash, "Leclerc"),
+		     "No puedo buscar un elemento en un hash vacio");
 
-	char *nombres[] = { "Fran", "Otto", "Bianca", "Oli", "Mateo", "Rocco" };
-	char *equipos[] = { "Ferrari", "Toyota",   "Glickenhaus",
-			    "Porsche", "Cadillac", "Vanwall" };
-	int tamanio = 6;
-
-	for (int i = 0; i < tamanio; i++)
-		hash = hash_insertar(hash, nombres[i], equipos[i], NULL);
-
-	hash_quitar(hash, "Oli");
-	char *buscado = hash_obtener(hash, "Oli");
-	pa2m_afirmar(
-		buscado == NULL,
-		"Busco un elemento que estaba en el hash y no lo encuentro");
-	hash_destruir_todo(hash, NULL);
+	hash_destruir(hash);
 }
 
-void existe_la_clave_del_elemento_insertado()
+bool sin_corte(const char *clave, void *valor, void *aux)
 {
-	hash_t *hash = hash_crear(10);
-
-	char *nombres[] = { "Fran", "Otto", "Bianca", "Oli", "Mateo", "Rocco" };
-	char *equipos[] = { "Ferrari", "Toyota",   "Glickenhaus",
-			    "Porsche", "Cadillac", "Vanwall" };
-	int tamanio = 6;
-
-	for (int i = 0; i < tamanio; i++)
-		hash = hash_insertar(hash, nombres[i], equipos[i], NULL);
-
-	pa2m_afirmar(hash_contiene(hash, "Fran"),
-		     "La clave de un elemento en la tabla existe");
-	hash_destruir_todo(hash, NULL);
+	return strcmp(clave, "Leclerc") != 0;
 }
 
-void no_existe_la_clave_de_un_elemento_no_insertado()
+bool corte(const char *clave, void *valor, void *aux)
 {
-	hash_t *hash = hash_crear(10);
-
-	char *nombres[] = { "Fran", "Otto", "Bianca", "Oli", "Mateo", "Rocco" };
-	char *equipos[] = { "Ferrari", "Toyota",   "Glickenhaus",
-			    "Porsche", "Cadillac", "Vanwall" };
-	int tamanio = 6;
-
-	for (int i = 0; i < tamanio; i++)
-		hash = hash_insertar(hash, nombres[i], equipos[i], NULL);
-
-	pa2m_afirmar(
-		!hash_contiene(hash, "Maxi"),
-		"La clave de un elemento no insertado en la tabla no existe");
-	hash_destruir_todo(hash, NULL);
+	return strcmp(clave, "Bianca") != 0;
 }
 
-void se_puede_iterar_sobre_todos_los_elementos()
+void no_se_puede_iterar_con_un_hash_nulo()
+{
+	pa2m_afirmar(hash_con_cada_clave(NULL, sin_corte, NULL) == 0,
+		     "No se puede iterar sobre un hash nulo");
+}
+
+void no_se_puede_iterar_con_una_funcion_nula()
+{
+	hash_t *hash = hash_crear(3);
+	pa2m_afirmar(hash_con_cada_clave(hash, NULL, NULL) == 0,
+		     "No se puede iterar con una funcion nula");
+	hash_destruir(hash);
+}
+
+void se_puede_iterar_todos_los_elementos()
 {
 	hash_t *hash = hash_crear(20);
 
@@ -523,7 +553,7 @@ void se_puede_iterar_sobre_todos_los_elementos()
 	hash_destruir(hash);
 }
 
-void se_puede_iterar_sobre_algunos_elementos()
+void se_puede_iterar_algunos_elementos()
 {
 	hash_t *hash = hash_crear(20);
 
@@ -542,30 +572,48 @@ void se_puede_iterar_sobre_algunos_elementos()
 	hash_destruir(hash);
 }
 
+void no_se_itera_sobre_un_hash_vacio()
+{
+	hash_t *hash = hash_crear(20);
+
+	pa2m_afirmar(hash_con_cada_clave(hash, corte, NULL) == 0,
+		     "No se itera ningun elemento de un hash vacio");
+
+	hash_destruir(hash);
+}
+
 int main()
 {
 	pa2m_nuevo_grupo("Pruebas de Insercion");
-	se_pueden_insertar_varios_elementos();
-	se_puede_actualizar_el_valor_de_los_elementos();
-	inserscion_masiva();
+	no_se_puede_insertar_en_un_hash_nulo();
+	no_se_puede_insertar_con_una_clave_nula();
+	se_puede_insertar_elementos_en_un_hash_sin_remplazos();
+	se_puede_insertar_elementos_en_un_hash_con_remplazo();
+	se_puede_insertar_elementos_nulos();
 
 	pa2m_nuevo_grupo("Pruebas de Rehash");
-	se_puede_hacer_un_rehash_correcto();
+	se_prueba_que_el_rehash_funcione_correctamente();
 
-	pa2m_nuevo_grupo("Pruebas de Eliminacion");
-	se_puede_eliminar_una_clave_que_existe();
-	no_se_puede_eliminar_una_clave_que_no_existe();
+	pa2m_nuevo_grupo("Pruebas de Quitar");
+	no_se_puede_quitar_un_elemento_de_un_hash_nulo();
+	no_se_puede_quitar_un_elemento_con_clave_nula();
+	se_puede_quitar_un_elemento_que_existe();
+	no_se_puede_quitar_un_elemento_que_no_existe();
+	no_se_puede_quitar_sobre_un_hash_vacio();
 
-	pa2m_nuevo_grupo("Pruebas de busqueda");
+	pa2m_nuevo_grupo("Pruebas de Busqueda");
+	no_se_puede_buscar_en_un_hash_nulo();
+	no_se_puede_buscar_con_una_clave_nula();
 	se_puede_buscar_un_elemento_que_existe();
-	no_se_puede_encontrara_un_elemento_que_no_existe();
-	un_elemento_eliminado_no_sigue_en_el_hash();
-	existe_la_clave_del_elemento_insertado();
-	no_existe_la_clave_de_un_elemento_no_insertado();
+	no_se_puede_encontrar_un_elemento_que_no_existe();
+	no_se_busca_sobre_un_hash_vacio();
 
-	pa2m_nuevo_grupo("Pruebas de Iterador Interno");
-	se_puede_iterar_sobre_todos_los_elementos();
-	se_puede_iterar_sobre_algunos_elementos();
+	pa2m_nuevo_grupo("Pruebas de Iterador");
+	no_se_puede_iterar_con_un_hash_nulo();
+	no_se_puede_iterar_con_una_funcion_nula();
+	se_puede_iterar_todos_los_elementos();
+	se_puede_iterar_algunos_elementos();
+	no_se_itera_sobre_un_hash_vacio();
 
 	return pa2m_mostrar_reporte();
 }
