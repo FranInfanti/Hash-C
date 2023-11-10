@@ -118,6 +118,15 @@ El proceso que se hace es muy similar, la única diferencia es lo que devuelven.
 
 Veamos que la complejidad de buscar un elemento en una tabla de hash, en el caso promedio es $O(1)$, pues al hashear se obtiene una posición donde se encuentra directamente el elemento buscado. Es cierto que en el peor caso es $O(n)$, pues se deben recorrer $n$ colisiones, pero eso depende de que tan buena sea la función de hash y el uso o no de un ***rehash***.
 
+
+---
+<div align="center">
+<img width="40%" src="img/hash_buscar.svg">
+<div>Por ejemplo, busco el valor con la clave 0x74b1d29a, si la hasheo con djb2 me da la posicion 2, entonces uso el puntero en la posicion 2 del array para ir a donde esta apuntando y vemos que existe el elemento</div>
+<div>Podria haber tomado la clave 0xd70dd2ee y vemos que nos da la posicion 4, pero como ahi no hay nada, entonces no existe</div>
+</div>
+
+---
 Para determinar la cantidad de elementos que hay en la tabla de hash se puede usar una función que devuelve un valor al cual se tiene una referencia directa desde la estructura `struct hash`. Por lo tanto es por eso que esta operación tiene complejidad constante $O(1)$.
 
 El iterador interno le permite al usuario recorrer los elementos que él quiera, este funciona pasándole la tabla de hash, una función de tipo bool y un auxiliar, si se quiere. La función se le aplica a cada elemento del hash hasta que devuelva false. Finalmente se devuelve la cantidad de elementos a los cuales se les aplica la función. La complejidad de esto es $O(n)$, pues en el peor de los casos se recorren los $n$ elementos de la tabla.
@@ -125,27 +134,28 @@ El iterador interno le permite al usuario recorrer los elementos que él quiera,
 ## Respuestas a las preguntas teóricas
 Un diccionario es una coleccion de pares, un par esta conformado por dos partes: 
 - El `valor`, que vendria a ser lo que se quiere almacenar en el diccionario.
-- La `clave`, esta debe ser unica y es utilizada como un indice, pues a traves de esta vamos a poder encontrar y acceder al `valor` que se esta almacenando. 
+- La `clave`, la cual debe ser unica y se utiliza como un indice, pues a traves de esta vamos a poder encontrar y acceder al `valor` que se esta almacenando. 
 
-El motivo de por el cual usamos diccionarios es porque estos mejoran el tiempo de acceso a un elemento. Es decir, veamos en el caso de las **lista**, el acceso a un dato tiene una complejidad lineal $O(n)$. En el caso de los **ABB** (suponiendo que esta balanceado), la complejidad seria $O(log(n))$. Pero en el caso de los diccionarios, se busca optimizar esta operacion a tal punto de que la complejidad sea $O(1)$, entonces buscar un elemento en un dicionaros con $n$ elementos seria algo casi instantaneo. 
+El motivo de por el cual usamos diccionarios es porque estos mejoran el tiempo de acceso a un elemento. Es decir, veamos en el caso de las **lista**, el acceso a un dato tiene una complejidad lineal $O(n)$. En el caso de los **ABB** (suponiendo que esta balanceado), la complejidad seria $O(log(n))$. Pero en el caso de los diccionarios, se busca optimizar esta operacion a tal punto de que la complejidad, en el caso promedio, sea $O(1)$. Entonces buscar un elemento en un dicionaros con $n$ elementos seria algo casi instantaneo. 
 
 ### Tablas de Hash
 
 Una posible forma de implementar los diccionarios es con ***Tablas de Hash***. Esta es una estructura la cual contiene estos pares mencionados anteriormente. 
 
-Yo para poder acceder a un elemento de la tabla voy a necesitar la `clave` que esta asociada a este elemento. Teniendo mi `clave` voy a tener que aplicarle una `funcion de hash`, lo que hace esta funcion es transformar esa `clave` en una posicion de la tabla, donde puede que se encuentre el elemento que estoy buscando. Si el elemento existe, entonces debe estar en esa posicion.
+Yo para poder acceder a un elemento de la tabla voy a necesitar la `clave` que esta asociada a este elemento. Teniendo mi `clave` voy a tener que aplicarle una `funcion de hash`, lo que hace esta funcion es transformar esa `clave` en una posicion de la tabla, donde puede que se encuentre el elemento que estoy buscando. Si el elemento existe, entonces debe estar en esa posicion. Una `funcion de hash` no debe depender del tamaño de la tabla
 
 ---
 <div align="center">
-<img width="70%" src="tabla_de_hash.svg">
+<img width="45%" src="img/tabla_de_hash.svg">
+<div>A cada clave se le asocia una posicion donde podemos encontrar tanto el valor como la clave</div>
 </div>
 
 ---
-El problema que ocurre es que yo puedo tener $n$ claves y $m$ posiciones en tabla.Ahora $n$ es un valor que no esta acotado, puede tomar valores desde $0$ hasta el infinito. Pero $m$ si es un valor acotado, este depende de la cantidad de espacio que tiene nuestra tabla de hash. Entonces lo que va a ocurrir, sea cual sea la funcion de hash, es que para $x$ valores de $n$ van a coincidir las posiciones en la tabla de hash. A esto se lo llaman ***Colisiones*** y dependiendo de como las resolvamos vamos a estar utilizando un tipo de hash diferente.
+El problema que ocurre es que yo puedo tener $n$ claves y $m$ posiciones en tabla. Ahora $n$ es un valor que no esta acotado, puede tomar valores desde $0$ hasta el infinito. Pero $m$ si es un valor acotado, este depende de la cantidad de espacio que tiene nuestra tabla de hash. Entonces lo que va a ocurrir, sea cual sea la funcion de hash, es que para $x$ valores de $n$ van a coincidir las posiciones en la tabla de hash. A esto se lo llaman ***Colisiones*** y dependiendo de como las resolvamos vamos a estar utilizando un tipo de hash diferente.
 
 ---
 <div align="center">
-<img width="70%" src="colisiones.svg">
+<img width="45%" src="img/colisiones.svg">
 </div>
 
 ---
@@ -162,7 +172,7 @@ El problema que ocurre es que yo puedo tener $n$ claves y $m$ posiciones en tabl
   ---
   En este tipo de hash para poder manejar las `colisiones` existen tres formas diferentes:
   - `Porbing Lineal:` en este caso lo que haremos es insertar la colision en la proxima posicion vacia de la tabla. Es decir, nosotros vamos a hashear la clave y veremos que en la posicion obtenida ya hay un par. Entonces iremos avanzando por las posiciones de la tabla hasta encontrar una posicion libre e insertar el nuevo par.
-  - `Porbing Cuadratico:` usaremos la operacion (intentos fallidos)$²$ para poder insertar. 
+  - `Porbing Cuadratico:` usaremos la operacion (intentos fallidos)² para poder insertar. 
         
     - Por ejemplo si nuestra funcion de hash es $hash(clave)$ % $tamanio$, si encontramos una colision la primera vez haremos $hash(clave) +1²$ % $tamanio$, la segunda $hash(clave) +2²$ % $tamanio$ y la n-enesima $hash(clave) +n²$ % $tamanio$ 
 
