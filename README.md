@@ -33,6 +33,7 @@ La implementación que se usa para crear la tabla de hash consiste de dos estruc
 ---
 <div align="center">
 <img width="40%" src="img/estructura_hash.svg">
+<div>Representación de cómo se vería aproximadamente el heap</div>
 </div>
 
 ---
@@ -53,6 +54,7 @@ Analizando la complejidad de crear un hash, se puede ver que es constante $O(1)$
 ---
 <div align="center">
 <img width="35%" src="img/hash_crear.svg">
+<div>Representación de cómo se vería el heap luego de haber sido creado</div>
 </div>
 
 ---
@@ -63,6 +65,7 @@ Veamos que la complejidad de destruir un hash siempre va a ser $O(n)$, pues si s
 ---
 <div align="center">
 <img width="70%" src="img/hash_destruir.svg">
+<div>Representación de cómo sería el proceso de ir liberando la memoria de cada parte de la estructura</div>
 </div>
 
 ---
@@ -75,6 +78,7 @@ Veamos que la complejidad de insertar un elemento en una tabla de hash es $O(n)$
 ---
 <div align="center">
 <img width="60%" src="img/hash_insertar.svg">
+<div>Representación de cómo se vería insertar un nuevo elemento que no colisione (es muy similar cuando colisiona) y como se vería si se tendria que actualizar el valor</div>
 </div>
 
 ---
@@ -87,6 +91,7 @@ La complejidad que tiene el ***rehash*** va a ser $O(n)$, pues se debe recorrer 
 ---
 <div align="center">
 <img width="60%" src="img/rehash.svg">
+<div>Representación de como se veria resumidamente la operación de rehash</div>
 </div>
 
 ---
@@ -103,6 +108,7 @@ Veamos que la complejidad de eliminar un elemento en un hash es $O(n)$, pues en 
 ---
 <div align="center">
 <img width="40%" src="img/hash_quitar.svg">
+<div>Representación de cómo se vería el proceso de quitar un elemento del hash</div>
 </div>
 
 ---
