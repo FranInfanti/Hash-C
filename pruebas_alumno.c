@@ -455,7 +455,7 @@ void no_se_puede_buscar_con_una_clave_nula()
 	hash_t *hash = hash_crear(3);
 	pa2m_afirmar(hash_obtener(hash, NULL) == NULL &&
 			     !hash_obtener(hash, NULL),
-		     "No se puede buscar en un hash nulo");
+		     "No se puede buscar con una clave nula");
 	hash_destruir(hash);
 }
 
@@ -464,7 +464,7 @@ void se_puede_buscar_un_elemento_que_existe()
 	hash_t *hash = hash_crear(20);
 
 	char *nombres[] = { "Fran",  "Otto", "Bianca", "Oli",
-			    "Mateo", "Tomi", "Rocco",  "Alan" };
+			    "Mateo", "Tomi", "Rocco",  "Max" };
 	char *equipos[] = { "Ferrari",	"Toyota",  "Glickenhaus", "Porsche",
 			    "Cadillac", "Vanwall", "Peugeot",	  "United" };
 	int tamanio = 8;
@@ -485,7 +485,7 @@ void no_se_puede_encontrar_un_elemento_que_no_existe()
 	hash_t *hash = hash_crear(20);
 
 	char *nombres[] = { "Fran",  "Otto", "Bianca", "Oli",
-			    "Mateo", "Tomi", "Rocco",  "Alan" };
+			    "Mateo", "Tomi", "Rocco",  "Max" };
 	char *equipos[] = { "Ferrari",	"Toyota",  "Glickenhaus", "Porsche",
 			    "Cadillac", "Vanwall", "Peugeot",	  "United" };
 	int tamanio = 8;
@@ -508,6 +508,26 @@ void no_se_busca_sobre_un_hash_vacio()
 		     "No puedo buscar un elemento en un hash vacio");
 
 	hash_destruir(hash);
+}
+
+void no_puedo_buscar_un_elemento_que_estaba_en_el_hash()
+{
+	hash_t *hash = hash_crear(10);
+
+	char *nombres[] = { "Fran", "Otto", "Bianca", "Oli", "Mateo", "Rocco" };
+	char *equipos[] = { "Ferrari", "Toyota",   "Glickenhaus",
+			    "Porsche", "Cadillac", "Vanwall" };
+	int tamanio = 6;
+
+	for (int i = 0; i < tamanio; i++)
+		hash = hash_insertar(hash, nombres[i], equipos[i], NULL);
+
+	hash_quitar(hash, "Oli");
+	pa2m_afirmar(
+		hash_obtener(hash, "Oli") == NULL &&
+			!hash_contiene(hash, "Oli"),
+		"Busco un elemento que estaba en el hash y no lo encuentro");
+	hash_destruir_todo(hash, NULL);
 }
 
 bool sin_corte(const char *clave, void *valor, void *aux)
@@ -539,7 +559,7 @@ void se_puede_iterar_todos_los_elementos()
 	hash_t *hash = hash_crear(20);
 
 	char *nombres[] = { "Fran",  "Otto", "Bianca", "Oli",
-			    "Mateo", "Tomi", "Rocco",  "Alan" };
+			    "Mateo", "Tomi", "Rocco",  "Max" };
 	char *equipos[] = { "Ferrari",	"Toyota",  "Glickenhaus", "Porsche",
 			    "Cadillac", "Vanwall", "Peugeot",	  "United" };
 	int tamanio = 8;
@@ -558,7 +578,7 @@ void se_puede_iterar_algunos_elementos()
 	hash_t *hash = hash_crear(20);
 
 	char *nombres[] = { "Fran",  "Otto", "Bianca", "Oli",
-			    "Mateo", "Tomi", "Rocco",  "Alan" };
+			    "Mateo", "Tomi", "Rocco",  "Max" };
 	char *equipos[] = { "Ferrari",	"Toyota",  "Glickenhaus", "Porsche",
 			    "Cadillac", "Vanwall", "Peugeot",	  "United" };
 	int tamanio = 8;
@@ -607,6 +627,7 @@ int main()
 	se_puede_buscar_un_elemento_que_existe();
 	no_se_puede_encontrar_un_elemento_que_no_existe();
 	no_se_busca_sobre_un_hash_vacio();
+	no_puedo_buscar_un_elemento_que_estaba_en_el_hash();
 
 	pa2m_nuevo_grupo("Pruebas de Iterador");
 	no_se_puede_iterar_con_un_hash_nulo();

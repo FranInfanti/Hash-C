@@ -17,14 +17,14 @@ struct hash {
 	struct nodo **array;
 };
 
-unsigned long djb2(void *data)
+size_t djb2(void *data)
 {
 	const unsigned char *str = data;
-	unsigned long hash = 5381;
+	size_t hash = 5381;
 	int c;
 
 	while ((c = *(str++)))
-		hash = ((hash << 5) + hash) + (unsigned long)c;
+		hash = ((hash << 5) + hash) + (size_t)c;
 
 	return hash;
 }
@@ -168,6 +168,24 @@ size_t recorrer_nodos(struct nodo *actual,
 }
 
 /*
+ * Recibe un hash y un array que contiene los nodos que se quieren insertar
+ * en el hash.
+ */
+void cargar_nodos(struct hash *hash, struct nodo **array)
+{
+	for (size_t i = 0; i < hash->tamanio >> 1; i++) {
+		struct nodo *actual = array[i];
+		while (actual != NULL) {
+			size_t posicion =
+				djb2((void *)actual->clave) % hash->tamanio;
+			void *aux = actual->siguiente;
+			insertar_nodo(hash, posicion, actual);
+			actual = aux;
+		}
+	}
+}
+
+/*
  * Recibe el hash a rehashear. 
  *
  * Devuelve el hash rehasheado o NULL en caso de error.
@@ -185,16 +203,8 @@ void *rehash(struct hash *hash)
 	hash->tamanio = nuevo_tamanio;
 	hash->capacidad = 0;
 
-	for (size_t i = 0; i < nuevo_tamanio >> 1; i++) {
-		struct nodo *actual = array[i];
-		while (actual != NULL) {
-			size_t posicion = (size_t)djb2((void *)actual->clave) %
-					  hash->tamanio;
-			void *aux = actual->siguiente;
-			insertar_nodo(hash, posicion, actual);
-			actual = aux;
-		}
-	}
+	cargar_nodos(hash, array);
+
 	free(array);
 	return hash;
 }
@@ -220,7 +230,7 @@ hash_t *hash_insertar(hash_t *hash, const char *clave, void *elemento,
 	if (!hash || !clave)
 		return NULL;
 
-	size_t posicion = (size_t)djb2((void *)clave) % hash->tamanio;
+	size_t posicion = djb2((void *)clave) % hash->tamanio;
 	void *remplazado = NULL;
 
 	struct nodo *existe = buscar_clave(hash->array[posicion], clave);
@@ -244,7 +254,7 @@ void *hash_quitar(hash_t *hash, const char *clave)
 	if (!hash || !clave)
 		return NULL;
 
-	size_t posicion = (size_t)djb2((void *)clave) % hash->tamanio;
+	size_t posicion = djb2((void *)clave) % hash->tamanio;
 	if (!hash->array[posicion])
 		return NULL;
 
@@ -256,7 +266,7 @@ void *hash_obtener(hash_t *hash, const char *clave)
 	if (!hash || !clave)
 		return NULL;
 
-	size_t posicion = (size_t)djb2((void *)clave) % hash->tamanio;
+	size_t posicion = djb2((void *)clave) % hash->tamanio;
 	struct nodo *buscado = buscar_clave(hash->array[posicion], clave);
 
 	return !buscado ? NULL : buscado->valor;
@@ -266,7 +276,8 @@ bool hash_contiene(hash_t *hash, const char *clave)
 {
 	if (!hash || !clave)
 		return NULL;
-	size_t posicion = (size_t)djb2((void *)clave) % hash->tamanio;
+
+	size_t posicion = djb2((void *)clave) % hash->tamanio;
 	return !!buscar_clave(hash->array[posicion], clave);
 }
 
