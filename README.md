@@ -197,7 +197,7 @@ El problema que ocurre es que yo puedo tener $n$ claves y $m$ posiciones en tabl
 
   ---
   <div align="center">
-  <img width="40%" src="img/hash_abierto.svg">
+  <img width="40%" src="img/hash_abierto.png">
   <div>Representacion de un hash abierto, implementado con "nodos"</div>
   </div>
 
