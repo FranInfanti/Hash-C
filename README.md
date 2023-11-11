@@ -118,7 +118,6 @@ El proceso que se hace es muy similar, la única diferencia es lo que devuelven.
 
 Veamos que la complejidad de buscar un elemento en una tabla de hash, en el caso promedio es $O(1)$, pues al hashear se obtiene una posición donde se encuentra directamente el elemento buscado. Es cierto que en el peor caso es $O(n)$, pues se deben recorrer $n$ colisiones, pero eso depende de que tan buena sea la función de hash y el uso o no de un ***rehash***.
 
-
 ---
 <div align="center">
 <img width="40%" src="img/hash_buscar.svg">
@@ -133,16 +132,19 @@ El iterador interno le permite al usuario recorrer los elementos que él quiera,
 
 ## Respuestas a las preguntas teóricas
 Un diccionario es una coleccion de pares, un par esta conformado por dos partes: 
-- El `valor`, que vendria a ser lo que se quiere almacenar en el diccionario.
-- La `clave`, la cual debe ser unica y se utiliza como un indice, pues a traves de esta vamos a poder encontrar y acceder al `valor` que se esta almacenando. 
+- El `valor:` es lo que se quiere almacenar en el diccionario.
+- La `clave:` esta debe ser unica, pues se va a utilizar como un indice para acceder a un dato. 
 
-El motivo de por el cual usamos diccionarios es porque estos mejoran el tiempo de acceso a un elemento. Es decir, veamos en el caso de las **lista**, el acceso a un dato tiene una complejidad lineal $O(n)$. En el caso de los **ABB** (suponiendo que esta balanceado), la complejidad seria $O(log(n))$. Pero en el caso de los diccionarios, se busca optimizar esta operacion a tal punto de que la complejidad, en el caso promedio, sea $O(1)$. Entonces buscar un elemento en un dicionaros con $n$ elementos seria algo casi instantaneo. 
-
+El motivo de por el cual usamos diccionarios es porque estos mejoran el tiempo de acceso a un elemento. Es decir, veamos en el caso de las **lista**, el acceso a un dato tiene una complejidad lineal $O(n)$. En el caso de los **ABB** (suponiendo que esta balanceado), la complejidad seria $O(log(n))$. Pero en el caso de los diccionarios, se busca optimizar esta operacion a tal punto de que la complejidad, en el caso promedio, sea $O(1)$. Entonces buscar un elemento en un dicionaros con $n$ elementos seria algo casi instantaneo.
+ 
 ### Tablas de Hash
 
-Una posible forma de implementar los diccionarios es con ***Tablas de Hash***. Esta es una estructura la cual contiene estos pares mencionados anteriormente. 
+Una posible forma de implementar los diccionarios es con ***Tablas de Hash***. Esta, como lo dice el nombre, es una estructura que tiene una forma de una tabla, donde en cada posicion de la tabla almacena un par. 
 
-Yo para poder acceder a un elemento de la tabla voy a necesitar la `clave` que esta asociada a este elemento. Teniendo mi `clave` voy a tener que aplicarle una `funcion de hash`, lo que hace esta funcion es transformar esa `clave` en una posicion de la tabla, donde puede que se encuentre el elemento que estoy buscando. Si el elemento existe, entonces debe estar en esa posicion. Una `funcion de hash` no debe depender del tamaño de la tabla
+Yo para poder acceder a un elemento de la tabla voy a necesitar la `clave` que esta asociada a este elemento. Teniendo mi `clave` voy a tener que aplicarle una `funcion de hash`.
+- Una `funcion de hash` es una funcion la cual transforma claves en un numero asociado. Una funcion de hash no puede depender de algo relacionado a la tabla de hash. En nuestro caso, la funciones que vamos a usar van a transformar un string a un numero, dicho lo dividiremos por el tamaño de la tabla y usaremos el resto como posicion en la tabla.
+
+Una vez tengamos la posicion asociada a la clave, debemos verificar si en esa posicion esta el elemento que buscamos. Si el elemento existe, entonces debe estar en esa posicion. Si eso no ocurre, entonces hicimos algo mal. 
 
 ---
 <div align="center">
@@ -162,35 +164,46 @@ El problema que ocurre es que yo puedo tener $n$ claves y $m$ posiciones en tabl
 - ### Hash Cerrado
   Se dice que cuando un hash es cerrado, este tiene un `direccionamiento abierto`.
 
-  Que un hash sea cerrado significa que los pares deben guardarse dentro de la misma estructura que la tabla. Entonces podriamos pensar que cada posicion de la tabla va a almacenar un `valor` y una `clave`.
+  Que un hash sea cerrado significa que los pares deben guardarse dentro de la misma estructura que la tabla. Entonces podriamos pensar que cada posicion de la tabla va a almacenar un `valor` y una `clave`, es decir, un par.
 
   ---
   <div align="center">
-  <img width="70%" src="hash_cerrado.svg">
+  <img width="45%" src="img/hash_cerrado.svg">
+  <div>Representacion de un hash cerrado</div>
   </div>
 
   ---
   En este tipo de hash para poder manejar las `colisiones` existen tres formas diferentes:
-  - `Porbing Lineal:` en este caso lo que haremos es insertar la colision en la proxima posicion vacia de la tabla. Es decir, nosotros vamos a hashear la clave y veremos que en la posicion obtenida ya hay un par. Entonces iremos avanzando por las posiciones de la tabla hasta encontrar una posicion libre e insertar el nuevo par.
-  - `Porbing Cuadratico:` usaremos la operacion (intentos fallidos)² para poder insertar. 
+  - `Probing Lineal:` en este caso lo que haremos es insertar la colision en la proxima posicion vacia de la tabla. Es decir, nosotros vamos a hashear la clave y veremos que en la posicion obtenida ya hay un par. Entonces iremos avanzando por las posiciones de la tabla hasta encontrar una posicion libre e insertar el nuevo par.
+  - `Probing Cuadratico:` en este caso usaremos la operacion (intentos fallidos)² para poder insertar. 
         
     - Por ejemplo si nuestra funcion de hash es $hash(clave)$ % $tamanio$, si encontramos una colision la primera vez haremos $hash(clave) +1²$ % $tamanio$, la segunda $hash(clave) +2²$ % $tamanio$ y la n-enesima $hash(clave) +n²$ % $tamanio$ 
 
-  - `Hash Doble:` como lo dice el nombre aplicaremos otro hash diferente hasta encontrar un lugar libre en la tabla.
+  - `Hash Doble:` en este caso, como lo dice el nombre, aplicaremos otro hash diferente hasta encontrar un lugar libre en la tabla.
 
   Se dice que esta hash tiene un `direccionamiento abierto`, porque cuando insertamos un elemento lo estamos insertando en una posicion incorrecta.
 
-  Para el caso del `Probing Lineal`, para pode buscar un elemento deberemos hashear la clave y a partir de esa posicion ir recorriendo la tabla hasta encontrar el elemento, una posicion vacia o volver al mismo lugar.
+  ---
+  <div align="center">
+  <img width="100%" src="img/probing_lineal.svg">
+  <div>Como se resolveria una colision con Probing Lineal</div>
+  </div>
 
+  ---  
 - ### Hash Abierto
   Se dice que cuando un hash es abierto, este tiene un `direccionamiento cerrado`.
 
   Se dice que es un hash abierto, porque almacenaremos los pares fuera de la estructura de la tabla, es decir, en cada posicion de la tabla habra un puntero a una estructura donde se encontraran los pares, esta estructura pueden ser **nodos**, **listas**, etc...
 
+  ---
+  <div align="center">
+  <img width="40%" src="img/hash_abierto.svg">
+  <div>Representacion de un hash abierto, implementado con "nodos"</div>
+  </div>
+
+  ---
   Para trabajar con las colisiones lo que haremos es encadenar las colisiones en la estructura. Veamos que no hay problemas, pues si usamos una lista, podemos tener $n$ elementos en esa lista. Entonces nosotros hasheamos la clave, obtenemos la posicion y accedemos a la estructura donde debemos buscar el elemento recorriendola.
 
   Se dice que es un `direccionamiento cerrado`, porque las colisiones las estamos mandando a la posicion que les corresponde, solamente que las insertamos en una estructura a parte.
 
-Ahora es logico pensar que al usar cualquier tipo de hash, la complejidad de busqueda no seria $O(1)$, pues en el caso del abierto (si usamos `probing lineal`) debemos recorrer $n$ elementos de la tabla hasta encontrar el elemento, una posicion vacia o volver al inicio. Y en el caso del cerrado debemos recorrer la estructura que puede tambien tener $n$ elementos. Ahora la realidad es que esto va a depender de que tan buena sea la funcion de hash que estamos utilizando. Ademas para poder mejorar esto, lo que hacemos es llevar la cuenta de un `factor de carga` y que cuando este factor supera cierto valor auementamos el tamaño de nuestra tabla. A esta operacion se la llama ***Rehashear*** y lo que hacemos es crear una nueva estructura y rehashear cada clave para volver a insertar todos los elementos.
-
-¿Por que hacemos un ***rehash***?, al estar aumentando al doble el tamaño de nuestra tabla, lo que estamos haciendo es aumentar la cantidad de posiciones posibles que hay en nuestra tabla. Por lo tanto vamos a estar evitando las colisiones, pues no es lo mismo insertar $50,000$ elementos en una tabla de $3$ posiciones que en una de $1000$. En el primer caso la gran mayoria de valores van a colisionar y la complejidad tanto de insercion, eliminacion y busqueda van a tender a ser $O(n)$.
+Ahora es logico pensar que al usar cualquier tipo de hash, la complejidad de busqueda no seria $O(1)$, pues en el peor caso del abierto (si usamos `probing lineal`) debemos recorrer $n$ elementos de la tabla hasta volver a la posicion donde estabamos y determinar que la clave no existe. Y en el peor caso del cerrado debemos recorrer la estructura que estemos usando y esta puede tambien tener $n$ elementos. Ahora la realidad es que en el caso promedio, la complejidad es $O(1)$ y ademas las colisiones van a depender de que tan buena sea la funcion de hash que estamos utilizando. Ademas para poder mejorar esto, lo que hacemos es llevar la cuenta de un `factor de carga` y que cuando este factor supera cierto valor auementamos el tamaño de nuestra tabla al doble, triple o lo que sea. A esta operacion se la llama ***rehashear*** y lo que hacemos es crear una nueva estructura y hashear cada clave, con la misma funcion que usamos antes, para volver a insertar todos los elementos. Como el rango de posiciones de la tabla aumento, entonces aumenta la posibilidad de que las claves no colisionen.
