@@ -33,7 +33,7 @@ La implementación que se usa para crear la tabla de hash consiste de dos estruc
 ---
 <div align="center">
 <img width="40%" src="img/estructura_hash.svg">
-<div>Representación de cómo se vería aproximadamente el heap</div>
+<div>Representación de cómo se vería aproximadamente el hash</div>
 </div>
 
 ---
@@ -47,14 +47,14 @@ Al usuario se le proporciona una variedad de operaciones las cuales puede utiliz
 
 Para poder ***crear*** un hash se reserva un bloque de memoria que pueda almacenar todo lo especificado en `struct hash`. A su vez, dentro de la estructura se reserva un array de punteros a `struct nodo` de tamaño especificado por el usuario, este no puede ser menor a tres. Al finalizar el proceso de reservar memoria e inicializar los campos en sus valores correspondientes se devuelve al usuario un puntero a la estructura principal o `NULL` en caso de error.
 
-*(***COMENTARIO***: Inicialmente todos los valores de los campos de la estructura se inicializan en $0$, menos el campo que almacena el tamaño del array, en ese caso se inicializa con el tamaño que especificó el usuario.)*
+*(***COMENTARIO***: Inicialmente todos los valores de los campos de la estructura se inicializan en 0, menos el campo que almacena el tamaño del array, en ese caso se inicializa con el tamaño que especificó el usuario.)*
 
 Analizando la complejidad de crear un hash, se puede ver que es constante $O(1)$, pues solamente se reservan bloques de memoria en el heap y se inicializan en el valor correspondiente.
 
 ---
 <div align="center">
 <img width="35%" src="img/hash_crear.svg">
-<div>Representación de cómo se vería el heap luego de haber sido creado</div>
+<div>Representación de cómo se vería el hash luego de haber sido creado</div>
 </div>
 
 ---
@@ -98,10 +98,11 @@ La complejidad que tiene el ***rehash*** va a ser $O(n)$, pues se debe recorrer 
 Para utilizar la función de eliminar, el usuario debe proporcionar la tabla de hash y la clave del elemento que se desea eliminar. Una vez finalizado el proceso se devuelve el elemento eliminado o `NULL` si no existía o en caso de error,
 
 Para eliminar un elemento se hace hashea la clave a una posición válida del array y pueden ocurrir tres casos:
-- Se verifica si existen nodos en dicha posición.
- - En caso de que no, se devuelve `NULL`, pues eso significa que el elemento no existe.
- - Si existe y además está en la primera posición de las colisiones. Entonces se hace que el puntero del array apunte al siguiente de eliminar y se elimina el elemento liberando memoria.
- - Si existe, pero no está en la primera posición, entonces se recorre las colisiones hasta encontrar el nodo anterior al elemento que queremos eliminar o hasta que no haya más nodos. Si ocurre el primer caso, entonces se hace que el anterior apunte al siguiente de eliminar y luego se elimina el elemento. Ahora, si ocurre el segundo caso, se devuelve `NULL`, pues eso significa que no existe el elemento.
+
+Se verifica si existen nodos en dicha posición.
+- En caso de que no, se devuelve `NULL`, pues eso significa que el elemento no existe.
+- Si existe y además está en la primera posición de las colisiones. Entonces se hace que el puntero del array apunte al siguiente de eliminar y se elimina el elemento liberando memoria.
+- Si existe, pero no está en la primera posición, entonces se recorre las colisiones hasta encontrar el nodo anterior al elemento que queremos eliminar o hasta que no haya más nodos. Si ocurre el primer caso, entonces se hace que el anterior apunte al siguiente de eliminar y luego se elimina el elemento. Ahora, si ocurre el segundo caso, se devuelve `NULL`, pues eso significa que no existe el elemento.
 
 Veamos que la complejidad de eliminar un elemento en un hash es $O(n)$, pues en el peor de los casos, cuando se hashea la clave, se obtiene una posición con $n$ colisiones y hay que recorrer todas para determinar que el nodo no existe.
 
@@ -141,9 +142,9 @@ El motivo por el cual usamos diccionarios es porque estos mejoran el tiempo de a
 Una posible forma de implementar los diccionarios es con ***Tablas de Hash***. Esta, como lo dice el nombre, es una estructura que tiene una forma de una tabla, donde en cada posición de la tabla se almacena un par.
 
 Yo para poder acceder a un elemento de la tabla voy a necesitar la `clave` que está asociada a este elemento. Teniendo mi `clave` voy a tener que aplicarle una `función de hash`.
-- Una `función de hash` es una función la cual transforma claves en un número asociado. Una función de hash no puede depender de algo relacionado a la tabla de hash. En nuestro caso, las funciones que vamos a usar van a transformar un string a un número, dicho lo dividiremos por el tamaño de la tabla y usaremos el resto como posición en la tabla.
+- Una `función de hash` es una función la cual transforma claves en un número asociado. Una función de hash no puede depender de algo relacionado a la tabla de hash. En nuestro caso, las funciones que vamos a usar van a transformar un string a un número, dicho numero lo dividiremos por el tamaño de la tabla y usaremos el resto como posición en la tabla.
 
-Una vez tengamos la posición asociada a la clave, debemos verificar si en esa posición está el elemento que buscamos. Si el elemento existe, entonces debe estar en esa posición. Si eso no ocurre, entonces hicimos algo mal.
+Una vez tengamos la posición asociada a la clave, debemos verificar si en esa posición está el elemento que buscamos. Si el elemento existe, entonces debe estar en esa posición. En el caso de que no existiera, entonces no habría problema. Ahora si el elemento existe y no está en esa posición, entonces hicimos algo mal.
 
 ---
 <div align="center">
@@ -206,4 +207,4 @@ El problema que ocurre es que yo puedo tener $n$ claves y $m$ posiciones en tabl
 
   Se dice que es un `direccionamiento cerrado`, porque las colisiones las estamos mandando a la posición que les corresponde, solamente que las insertamos en una estructura a parte.
 
-Ahora es lógico pensar que al usar cualquier tipo de hash, la complejidad de busqueda no seria $O(1)$, pues en el peor caso del abierto (si usamos `probing lineal`) debemos recorrer $n$ elementos de la tabla hasta volver a la posición donde estábamos y determinar que la clave no existe. Y en el peor caso del cerrado debemos recorrer la estructura que estemos usando y esta puede también tener $n$ elementos. Ahora la realidad es que en el caso promedio, la complejidad es $O(1)$ y además las colisiones van a depender de qué tan buena sea la función de hash que estamos utilizando. Además para poder mejorar esto, lo que hacemos es llevar la cuenta de un `factor de carga` y que cuando este factor supera cierto valor aumentamos el tamaño de nuestra tabla al doble, triple o lo que sea. A esta operación se la llama ***rehashear*** y lo que hacemos es crear una nueva estructura y hashear cada clave, con la misma función que usamos antes, para volver a insertar todos los elementos. Como el rango de posiciones de la tabla aumentó, entonces aumenta la posibilidad de que las claves no colisionan.
+Ahora es lógico pensar que al usar cualquier tipo de hash, la complejidad de busqueda no seria $O(1)$, pues en el peor caso del abierto (si usamos `probing lineal`) debemos recorrer $n$ elementos de la tabla hasta volver a la posición donde estábamos y determinar que la clave no existe. Y en el peor caso del cerrado debemos recorrer la estructura que estemos usando y esta puede también tener $n$ elementos. Ahora la realidad es que en el caso promedio, la complejidad es $O(1)$ y además las colisiones van a depender de qué tan buena sea la función de hash que estamos utilizando. Además para poder mejorar esto, lo que hacemos es llevar la cuenta de un `factor de carga` y que cuando este factor supera cierto valor aumentamos el tamaño de nuestra tabla al doble, triple o lo que sea. A esta operación se la llama ***rehashear*** y lo que hacemos es crear una nueva estructura y hashear cada clave, con la misma función que usamos antes, para volver a insertar todos los elementos. Como el rango de posiciones de la tabla aumentó, entonces aumenta la posibilidad de que las claves no colisionen.
