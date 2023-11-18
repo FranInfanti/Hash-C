@@ -139,7 +139,7 @@ void liberar_nodos(struct nodo *actual, void (*destructor)(void *))
 {
 	if (actual == NULL)
 		return;
-	if (!!destructor)
+	if (destructor)
 		destructor(actual->valor);
 
 	void *aux = actual->siguiente;
@@ -241,7 +241,7 @@ hash_t *hash_insertar(hash_t *hash, const char *clave, void *elemento,
 		remplazado = existe->valor;
 		existe->valor = elemento;
 	}
-	if (!!anterior)
+	if (anterior)
 		*anterior = remplazado;
 
 	float factor_carga = (float)hash->capacidad / (float)hash->tamanio;
